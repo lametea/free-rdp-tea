@@ -1,21 +1,15 @@
-name: RDP
+# Use a base image that supports systemd, for example, Ubuntu
+FROM ubuntu:20.04
 
-on: [workflow_dispatch]
+# Install necessary packages
+RUN apt-get update && \
+apt-get install -y shellinabox && \
+apt-get install -y systemd && \
+apt-get clean && \
+rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN echo 'root:root' | chpasswd
+# Expose the web-based terminal port
+EXPOSE 4200
 
-jobs:
-  build:
-    runs-on: windows-latest
-    steps:
-      - name: Download ngrok
-        run: |
-          Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
-          Expand-Archive ngrok.zip
-          ./ngrok.exe authtoken YOUR_AUTH_TOKEN
-
-      - name: Enable RDP
-        run: |
-          net user kamel123 MyStrong123 /add
-          net localgroup administrators kamel123 /add
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name 'fDenyTSConnections' -Value 0
-          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-          ./ngrok.exe tcp 3389
+# Start shellinabox
+CMD ["/usr/bin/shellinaboxd", "-t", "-s", "/:LOGIN"]
